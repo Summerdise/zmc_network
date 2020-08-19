@@ -8,9 +8,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -50,7 +58,16 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 try (Response response = client.newCall(request).execute()) {
-                                    Toast.makeText(MainActivity.this, response.body().string(), Toast.LENGTH_SHORT).show();
+                                    Gson gson = new Gson();
+                                    String jsonStatus = response.body().string();
+                                    JsonObject jsonObject = new JsonParser().parse(jsonStatus).getAsJsonObject();
+                                    JsonArray jsonArray = jsonObject.getAsJsonArray("data");
+                                    ArrayList<Person> dataList = new ArrayList<>();
+                                    for (JsonElement data : jsonArray){
+                                        Person person= gson.fromJson(data,new TypeToken<Person>(){}.getType());
+                                        dataList.add(person);
+                                    }
+                                   Toast.makeText(MainActivity.this, dataList.get(0).name, Toast.LENGTH_SHORT).show();
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
