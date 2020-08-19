@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">zmc_network</string>
+    <string name="get_information_text">Get Information</string>
 </resources>
