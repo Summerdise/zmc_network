@@ -58,16 +58,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 try (Response response = client.newCall(request).execute()) {
-                                    Gson gson = new Gson();
-                                    String jsonStatus = response.body().string();
-                                    JsonObject jsonObject = new JsonParser().parse(jsonStatus).getAsJsonObject();
-                                    JsonArray jsonArray = jsonObject.getAsJsonArray("data");
-                                    ArrayList<Person> dataList = new ArrayList<>();
-                                    for (JsonElement data : jsonArray){
-                                        Person person= gson.fromJson(data,new TypeToken<Person>(){}.getType());
-                                        dataList.add(person);
-                                    }
-                                   Toast.makeText(MainActivity.this, dataList.get(0).name, Toast.LENGTH_SHORT).show();
+                                    Wrapper wrapper = jsonToWrapper(response.body().string());
+                                    Toast.makeText(MainActivity.this, findFirstPersonNameInWrapper(wrapper), Toast.LENGTH_SHORT).show();
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -77,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                        Toast.makeText(MainActivity.this, "no web connect", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "fail to connect", Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -86,5 +78,24 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public Wrapper jsonToWrapper(String jsonStatus) {
+        Gson gson = new Gson();
+        JsonObject jsonObject = new JsonParser().parse(jsonStatus).getAsJsonObject();
+        JsonArray jsonArray = jsonObject.getAsJsonArray("data");
+        ArrayList<Person> dataList = new ArrayList<>();
+        for (JsonElement element : jsonArray) {
+            Person person = gson.fromJson(element, new TypeToken<Person>() {
+            }.getType());
+            dataList.add(person);
+        }
+        return new Wrapper(dataList);
+    }
 
+    public String findFirstPersonNameInWrapper(Wrapper wrapper) {
+        if (0 == wrapper.personList.size()) {
+            return "no person exist";
+        } else {
+            return wrapper.personList.get(0).name;
+        }
+    }
 }
