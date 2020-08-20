@@ -1,6 +1,7 @@
 package com.example.zmc_network;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -31,9 +33,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
-    private final OkHttpClient client = new OkHttpClient();
     private SharedPreferences sharedPref;
     private final String timesOfStart = "Start times";
+    private final String url = "https://twc-android-bootcamp.github.io/fake-data/data/default.json";
     @BindView(R.id.get_information_button)
     Button getInformationBtn;
     @BindView(R.id.get_start_times)
@@ -45,31 +47,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        updateTimesStart(getTimesStart());
+        initDatabase(url);
         getInformationBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final OkHttpClient client = new OkHttpClient();
-                final Request request = new Request.Builder()
-                        .get()
-                        .url("https://twc-android-bootcamp.github.io/fake-data/data/default.json")
-                        .build();
-                client.newCall(request).enqueue(new Callback() {
-                    @Override
-                    public void onResponse(@NotNull final Call call, @NotNull Response response) throws IOException {
-                        if (response.isSuccessful()) {
-                            String result = response.body().string();
-                            Wrapper wrapper = jsonToWrapper(result);
-                            String firstName = findFirstPersonNameInWrapper(wrapper);
-                            show(MainActivity.this, firstName);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                        Toast.makeText(MainActivity.this, "fail to connect", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
+                showStatus(url);
             }
         });
 
@@ -77,6 +60,32 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 show(MainActivity.this, getTimesStart() + "");
+            }
+        });
+    }
+
+    public void showStatus(String url) {
+        final OkHttpClient client = new OkHttpClient();
+        final Request request = new Request.Builder()
+                .get()
+                .url(url)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull final Call call, @NotNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String result = response.body().string();
+                    Wrapper wrapper = jsonToWrapper(result);
+                    String firstName = findFirstPersonNameInWrapper(wrapper);
+                    show(MainActivity.this, firstName);
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                Wrapper wrapper = getStatusFromDatabase();
+                String firstName = findFirstPersonNameInWrapper(wrapper);
+                show(MainActivity.this, firstName);
             }
         });
     }
@@ -118,12 +127,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        updateTimesStart(getTimesStart());
-    }
-
     public int getTimesStart() {
         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         return sharedPref.getInt(timesOfStart, Context.MODE_PRIVATE);
@@ -136,4 +139,37 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
     }
 
+    public Wrapper getStatusFromDatabase() {
+        AppDatabase db = Room.databaseBuilder(getApplicationContext(),
+                AppDatabase.class, "person").build();
+        return new Wrapper(db.personDao().getAll());
+    }
+
+    public void initDatabase(String url) {
+        final OkHttpClient client = new OkHttpClient();
+        final Request request = new Request.Builder()
+                .get()
+                .url(url)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(@NotNull final Call call, @NotNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String result = response.body().string();
+                    Wrapper wrapper = jsonToWrapper(result);
+                    AppDatabase db = Room.databaseBuilder(getApplicationContext(),
+                            AppDatabase.class, "person").build();
+                    for (Person person : wrapper.personList) {
+                        db.personDao().insertAll(person);
+                    }
+                }
+            }
+
+        });
+    }
 }
