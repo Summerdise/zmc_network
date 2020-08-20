@@ -2,11 +2,10 @@ package com.example.zmc_network;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Looper;
-import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -33,17 +32,18 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private final OkHttpClient client = new OkHttpClient();
-    private int times = 1;
+    private SharedPreferences sharedPref;
+    private final String timesOfStart = "Start times";
     @BindView(R.id.get_information_button)
     Button getInformationBtn;
     @BindView(R.id.get_start_times)
     Button getStartTimes;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         ButterKnife.bind(this);
         getInformationBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -56,11 +56,11 @@ public class MainActivity extends AppCompatActivity {
                 client.newCall(request).enqueue(new Callback() {
                     @Override
                     public void onResponse(@NotNull final Call call, @NotNull Response response) throws IOException {
-                        if(response.isSuccessful()){
+                        if (response.isSuccessful()) {
                             String result = response.body().string();
                             Wrapper wrapper = jsonToWrapper(result);
                             String firstName = findFirstPersonNameInWrapper(wrapper);
-                            show(MainActivity.this,firstName);
+                            show(MainActivity.this, firstName);
                         }
                     }
 
@@ -76,13 +76,13 @@ public class MainActivity extends AppCompatActivity {
         getStartTimes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(MainActivity.this, times+"", Toast.LENGTH_SHORT).show();
+                show(MainActivity.this, getTimesStart() + "");
             }
         });
     }
 
     public static void show(Context context, String text) {
-        Toast toast=null;
+        Toast toast = null;
         try {
             if (toast != null) {
                 toast.setText(text);
@@ -96,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
             Looper.loop();
         }
     }
+
     public Wrapper jsonToWrapper(String jsonStatus) {
         Gson gson = new Gson();
         JsonObject jsonObject = new JsonParser().parse(jsonStatus).getAsJsonObject();
@@ -120,6 +121,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        times++;
+        updateTimesStart(getTimesStart());
     }
+
+    public int getTimesStart() {
+        sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        return sharedPref.getInt(timesOfStart, Context.MODE_PRIVATE);
+    }
+
+    public void updateTimesStart(int timesNowStart) {
+        sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt(timesOfStart, timesNowStart + 1);
+        editor.apply();
+    }
+
 }
