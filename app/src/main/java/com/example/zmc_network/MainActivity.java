@@ -30,9 +30,11 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private final OkHttpClient client = new OkHttpClient();
-
-    @BindView(R.id.get__information_button)
+    private int times = 1;
+    @BindView(R.id.get_information_button)
     Button getInformationBtn;
+    @BindView(R.id.get_start_times)
+    Button getStartTimes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +78,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        getStartTimes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(MainActivity.this, times+"", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public Wrapper jsonToWrapper(String jsonStatus) {
@@ -97,5 +105,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             return wrapper.personList.get(0).name;
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        times++;
     }
 }
