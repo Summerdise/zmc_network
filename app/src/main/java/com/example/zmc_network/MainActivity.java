@@ -2,7 +2,10 @@ package com.example.zmc_network;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
@@ -40,10 +43,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (android.os.Build.VERSION.SDK_INT > 9) {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-        }
+//        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         ButterKnife.bind(this);
         getInformationBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -55,18 +55,13 @@ public class MainActivity extends AppCompatActivity {
                         .build();
                 client.newCall(request).enqueue(new Callback() {
                     @Override
-                    public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try (Response response = client.newCall(request).execute()) {
-                                    Wrapper wrapper = jsonToWrapper(response.body().string());
-                                    Toast.makeText(MainActivity.this, findFirstPersonNameInWrapper(wrapper), Toast.LENGTH_SHORT).show();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
+                    public void onResponse(@NotNull final Call call, @NotNull Response response) throws IOException {
+                        if(response.isSuccessful()){
+                            String result = response.body().string();
+                            Wrapper wrapper = jsonToWrapper(result);
+                            String firstName = findFirstPersonNameInWrapper(wrapper);
+                            show(MainActivity.this,firstName);
+                        }
                     }
 
                     @Override
@@ -86,6 +81,21 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public static void show(Context context, String text) {
+        Toast toast=null;
+        try {
+            if (toast != null) {
+                toast.setText(text);
+            } else {
+                toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
+            }
+            toast.show();
+        } catch (Exception e) {
+            Looper.prepare();
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
+            Looper.loop();
+        }
+    }
     public Wrapper jsonToWrapper(String jsonStatus) {
         Gson gson = new Gson();
         JsonObject jsonObject = new JsonParser().parse(jsonStatus).getAsJsonObject();
