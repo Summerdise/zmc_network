@@ -1,14 +1,13 @@
 package com.example.zmc_network;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity
 public class Person {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
-
+    @NonNull
+    @PrimaryKey
     public String name;
 
     public String avatar;
